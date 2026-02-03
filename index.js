@@ -5,8 +5,11 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const twilio = require("twilio");
 
-const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
-const JWT_SECRET = "dev_secret_change_later";
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN,
+);
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const app = express();
 app.use(cors());
@@ -33,12 +36,16 @@ app.post("/send-otp", async (req, res) => {
   const otp = generateOTP();
   otpStore.set(phone, otp);
 
-  // TODO: اربط مزوّد SMS هون
-  await client.messages.create({
-    body: `كود الدخول: ${otp}`,
-    from: process.env.TWILIO_FROM,
-    to: phone,
-  });
+  try {
+    await client.messages.create({
+      body: `كود الدخول: ${otp}`,
+      from: process.env.TWILIO_FROM_NUMBER,
+      to: phone,
+    });
+  } catch (err) {
+    console.error("Twilio error:", err.message);
+    return res.status(500).json({ error: "sms failed" });
+  }
 
   res.json({ success: true });
 });
