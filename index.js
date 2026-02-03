@@ -65,6 +65,8 @@ app.post("/verify-otp", (req, res) => {
   });
 });
 
-app.listen(3000, () => {
-  console.log("OTP server running on http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("OTP server running on port", PORT);
 });
