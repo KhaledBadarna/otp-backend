@@ -3,6 +3,9 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
+const twilio = require("twilio");
+
+const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
 const JWT_SECRET = "dev_secret_change_later";
 
 const app = express();
@@ -31,7 +34,11 @@ app.post("/send-otp", async (req, res) => {
   otpStore.set(phone, otp);
 
   // TODO: اربط مزوّد SMS هون
-  console.log("OTP:", phone, otp);
+  await client.messages.create({
+    body: `كود الدخول: ${otp}`,
+    from: process.env.TWILIO_FROM,
+    to: phone,
+  });
 
   res.json({ success: true });
 });
