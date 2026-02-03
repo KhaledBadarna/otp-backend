@@ -5,10 +5,7 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const twilio = require("twilio");
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN,
-);
+const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const app = express();
@@ -39,7 +36,7 @@ app.post("/send-otp", async (req, res) => {
   try {
     await client.messages.create({
       body: `كود الدخول: ${otp}`,
-      from: process.env.TWILIO_FROM_NUMBER,
+      from: process.env.TWILIO_FROM,
       to: phone,
     });
   } catch (err) {
