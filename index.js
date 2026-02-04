@@ -35,7 +35,7 @@ app.post("/send-otp", async (req, res) => {
 
   try {
     await client.messages.create({
-      body: `كود الدخول: ${otp}`,
+      body: ` Your SHAFRA verification code is : ${otp}`,
       from: process.env.TWILIO_FROM,
       to: phone,
     });
