@@ -20,9 +20,11 @@ function generateOTP() {
   return Math.floor(1000 + Math.random() * 9000).toString(); // 4 digits
 }
 
-// إرسال OTP
+// إرسال OTP (يدعم SMS و WhatsApp)
+// إرسال OTP (يدعم SMS و WhatsApp الرسمي بالقوالب)
 app.post("/send-otp", async (req, res) => {
-  const { phone } = req.body;
+  const { phone, channel } = req.body;
+
   if (!phone) {
     return res.status(400).json({ error: "phone required" });
   }
@@ -34,19 +36,34 @@ app.post("/send-otp", async (req, res) => {
   otpStore.set(phone, otp);
 
   try {
-    await client.messages.create({
-      body: ` Your SHAFRA verification code is : ${otp}`,
-      from: process.env.TWILIO_FROM,
-      to: phone,
-    });
+    let messageOptions;
+
+    // ✅ إذا كان الطلب واتساب، نستخدم القالب الرسمي (Approved) اللي بالصور
+    if (channel === "whatsapp") {
+      messageOptions = {
+        from: "whatsapp:+15558751077", // الرقم الظاهر بصورتك كـ Online
+        to: `whatsapp:${phone}`,
+        // الـ SID تبع القالب اللي ظهر عندك بالجدول
+        contentSid: "HXac39e3d79beaf508b9f47ea4aef0941f",
+        // بنمرر الـ OTP ليكون مكان المتغير {{1}} في القالب
+        contentVariables: JSON.stringify({ 1: otp }),
+      };
+    } else {
+      // 📱 إذا كان SMS عادي
+      messageOptions = {
+        body: `Your SHAFRA verification code is: ${otp}`,
+        from: process.env.TWILIO_FROM,
+        to: phone,
+      };
+    }
+
+    await client.messages.create(messageOptions);
+    res.json({ success: true, channel: channel || "sms" });
   } catch (err) {
     console.error("Twilio error:", err.message);
-    return res.status(500).json({ error: "sms failed" });
+    return res.status(500).json({ error: "failed to send message" });
   }
-
-  res.json({ success: true });
 });
-
 // التحقق من OTP + إصدار توكن
 app.post("/verify-otp", (req, res) => {
   const { phone, code } = req.body;
