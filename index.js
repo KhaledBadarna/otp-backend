@@ -21,16 +21,13 @@ function generateOTP() {
 }
 
 // إرسال OTP (يدعم SMS و WhatsApp)
-// إرسال OTP (يدعم SMS و WhatsApp الرسمي بالقوالب)
+// ✅ التعديل الجديد في دالة الإرسال
 app.post("/send-otp", async (req, res) => {
   const { phone, channel } = req.body;
 
-  if (!phone) {
-    return res.status(400).json({ error: "phone required" });
-  }
-  if (!phone.startsWith("+972")) {
+  if (!phone) return res.status(400).json({ error: "phone required" });
+  if (!phone.startsWith("+972"))
     return res.status(400).json({ error: "invalid country" });
-  }
 
   const otp = generateOTP();
   otpStore.set(phone, otp);
@@ -38,18 +35,13 @@ app.post("/send-otp", async (req, res) => {
   try {
     let messageOptions;
 
-    // ✅ إذا كان الطلب واتساب، نستخدم القالب الرسمي (Approved) اللي بالصور
     if (channel === "whatsapp") {
       messageOptions = {
-        from: "whatsapp:+15558751077", // الرقم الظاهر بصورتك كـ Online
+        from: "whatsapp:+14155238886", // رقم الساندبوكس الموحد من تويليو
         to: `whatsapp:${phone}`,
-        // الـ SID تبع القالب اللي ظهر عندك بالجدول
-        contentSid: "HXac39e3d79beaf508b9f47ea4aef0941f",
-        // بنمرر الـ OTP ليكون مكان المتغير {{1}} في القالب
-        contentVariables: JSON.stringify({ 1: otp }),
+        body: `Your SHAFRA code is: ${otp}`, // نص عادي بدون قوالب عشان يوصل فوراً
       };
     } else {
-      // 📱 إذا كان SMS عادي
       messageOptions = {
         body: `Your SHAFRA verification code is: ${otp}`,
         from: process.env.TWILIO_FROM,
