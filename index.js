@@ -28,51 +28,51 @@ app.post("/send-otp", async (req, res) => {
 
   const cleanPhone = phone.replace("+", "");
   const otp = generateOTP();
-  otpStore.set(phone, otp);
+  const API_KEY = process.env.GLOBAL_SMS_KEY;
+  const message = `Your SHAFRA code is: ${otp}`;
+
+  // التنسيق الحرفي المطلوب حسب ملف node.js المرفق
+  const xmlBody =
+    '<?xml version="1.0" encoding="utf-8"?>' +
+    '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">' +
+    "<soap12:Body>" +
+    '<sendSmsToRecipients xmlns="apiGlobalSms">' + // الـ Namespace المطلوب
+    "<ApiKey>" +
+    API_KEY +
+    "</ApiKey>" +
+    "<txtOriginator>0542636724</txtOriginator>" +
+    "<destinations>" +
+    cleanPhone +
+    "</destinations>" +
+    "<txtSMSmessage>" +
+    message +
+    "</txtSMSmessage>" +
+    "<dteToDeliver></dteToDeliver>" +
+    "<txtAddInf>jsnodetest</txtAddInf>" +
+    "</sendSmsToRecipients>" +
+    "</soap12:Body>" +
+    "</soap12:Envelope>";
 
   try {
-    const API_KEY = process.env.GLOBAL_SMS_KEY;
-    const message = `Your SHAFRA code is: ${otp}`;
-
-    const xmlBody = `<?xml version="1.0" encoding="utf-8"?>
-    <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-      <soap:Body>
-        <sendSmsToRecipients xmlns="http://api.itnewsletter.co.il/webservices/">
-          <ApiKey>${API_KEY}</ApiKey>
-          <txtOriginator>0542636724</txtOriginator>
-          <destinations>${cleanPhone}</destinations>
-          <txtSMSmessage>${message}</txtSMSmessage>
-          <dteToDeliver></dteToDeliver>
-          <txtAddInf></txtAddInf>
-        </sendSmsToRecipients>
-      </soap:Body>
-    </soap:Envelope>`;
-
     const response = await axios.post(
-      `http://api.itnewsletter.co.il/webservices/wssms.asmx`, // شلنا الـ s هون (مهم جداً)
+      "http://api.itnewsletter.co.il/webservices/WsSMS.asmx", // الرابط الرسمي
       xmlBody,
       {
         headers: {
-          "Content-Type": "text/xml; charset=utf-8",
-          SOAPAction:
-            "http://api.itnewsletter.co.il/webservices/sendSmsToRecipients",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Content-Type": "application/soap+xml; charset=utf-8", // نوع المحتوى لـ Soap 1.2
+          SOAPAction: "apiGlobalSms/sendSmsToRecipients", // الأكشن المطلوب حرفياً
         },
-        timeout: 20000, // ننتظر 20 ثانية قبل ما نفصل
       },
     );
 
     console.log("Response From Global:", response.data);
-    res.json({ success: true, otp });
+    otpStore.set(phone, otp);
+    res.json({ success: true, message: "OTP Sent" });
   } catch (err) {
-    // هون بنطبع تفاصيل الخطأ عشان نفهم ليش السيرفر فصل
-    console.log("Error Status:", err.response?.status || "No Status");
-    console.log("Error Message:", err.message);
+    console.log("Error Details:", err.response?.data || err.message);
     res.status(500).json({ error: "Failed", details: err.message });
   }
 });
-
 app.post("/verify-otp", (req, res) => {
   const { phone, code } = req.body;
   if (otpStore.get(phone) === code) {
