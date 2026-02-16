@@ -34,7 +34,6 @@ app.post("/send-otp", async (req, res) => {
     const API_KEY = process.env.GLOBAL_SMS_KEY;
     const message = `Your SHAFRA code is: ${otp}`;
 
-    // استخدمنا الـ XML لأنه الأضمن حسب الوثيقة، وضفنا User-Agent عشان ريندر
     const xmlBody = `<?xml version="1.0" encoding="utf-8"?>
     <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
       <soap:Body>
@@ -50,23 +49,27 @@ app.post("/send-otp", async (req, res) => {
     </soap:Envelope>`;
 
     const response = await axios.post(
-      `https://api.itnewsletter.co.il/webservices/wssms.asmx`, // جرب https هون
+      `http://api.itnewsletter.co.il/webservices/wssms.asmx`, // شلنا الـ s هون (مهم جداً)
       xmlBody,
       {
         headers: {
           "Content-Type": "text/xml; charset=utf-8",
           SOAPAction:
             "http://api.itnewsletter.co.il/webservices/sendSmsToRecipients",
-          "User-Agent": "RenderServer/1.0",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         },
+        timeout: 20000, // ننتظر 20 ثانية قبل ما نفصل
       },
     );
 
     console.log("Response From Global:", response.data);
-    res.json({ success: true, otp }); // رجعنا الـ OTP بس عشان تتأكد إنه السيرفر شغال
+    res.json({ success: true, otp });
   } catch (err) {
-    console.log("Error Status:", err.response?.status);
-    res.status(500).json({ error: "Failed", message: err.message });
+    // هون بنطبع تفاصيل الخطأ عشان نفهم ليش السيرفر فصل
+    console.log("Error Status:", err.response?.status || "No Status");
+    console.log("Error Message:", err.message);
+    res.status(500).json({ error: "Failed", details: err.message });
   }
 });
 
