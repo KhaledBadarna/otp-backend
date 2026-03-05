@@ -7,7 +7,7 @@ app.use(express.json());
 
 app.post("/send-otp", async (req, res) => {
   const { phone } = req.body;
-  const otp = "1234";
+  const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
   const MY_API_KEY = process.env.GLOBAL_SMS_KEY;
 
