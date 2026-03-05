@@ -5,8 +5,6 @@ const axios = require("axios");
 const app = express();
 app.use(express.json());
 
-// مخزن مؤقت: بيحفظ الرقم والكود تبعه
-// { "972542636724": "5566" }
 const codes = {};
 
 app.post("/send-otp", async (req, res) => {
@@ -18,7 +16,6 @@ app.post("/send-otp", async (req, res) => {
     ? digits
     : `972${digits.startsWith("0") ? digits.slice(1) : digits}`;
 
-  // ⚠️ بنحفظ الكود في المخزن قبل ما نبعثه
   codes[formattedPhone] = otp;
   console.log("Saved Code:", formattedPhone, otp);
 
@@ -27,28 +24,28 @@ app.post("/send-otp", async (req, res) => {
   <soap12:Body>
     <sendSmsToRecipients xmlns="apiGlobalSms">
       <ApiKey>${process.env.GLOBAL_SMS_KEY}</ApiKey>
-      <txtOriginator>SHAFRA</txtOriginator>
-      <destinations>${formattedPhone}</destinations>
+      <txtOriginator>0542636724</txtOriginator> <destinations>${formattedPhone}</destinations>
       <txtSMSmessage>Your code is: ${otp}</txtSMSmessage>
     </sendSmsToRecipients>
   </soap12:Body>
 </soap12:Envelope>`;
 
   try {
-    await axios.post(
+    const response = await axios.post(
       "https://sapi.itnewsletter.co.il/webservices/WsSMS.asmx",
       xml,
       {
         headers: { "Content-Type": "application/soap+xml; charset=utf-8" },
       },
     );
+    console.log("Response:", response.data);
     res.json({ success: true });
   } catch (err) {
+    console.error("Error:", err.message);
     res.status(500).json({ error: "SMS failed" });
   }
 });
 
-// دالة التأكد (المقارنة)
 app.post("/verify-otp", (req, res) => {
   const { phone, code } = req.body;
   const digits = phone.replace(/\D/g, "");
@@ -56,11 +53,10 @@ app.post("/verify-otp", (req, res) => {
     ? digits
     : `972${digits.startsWith("0") ? digits.slice(1) : digits}`;
 
-  // بنشوف شو الكود اللي حفظناه لهذا الرقم
   const savedOtp = codes[formattedPhone];
 
   if (savedOtp && savedOtp === code) {
-    delete codes[formattedPhone]; // بنمسحه عشان الأمان بعد ما دخل
+    delete codes[formattedPhone];
     res.json({ success: true, token: "login-success-token" });
   } else {
     res.status(400).json({ error: "الكود غلط" });
