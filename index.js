@@ -51,12 +51,16 @@ xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
       },
     );
 
-    console.log("SOAP RESPONSE:");
+    // هذا السطر هو اللي رح يحل اللغز
+    console.log("FULL XML RESPONSE FROM GLOBAL SMS:", response.data);
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      apiResponse: response.data, // ابعت الرد للتطبيق عندك عشان تشوفه بالتيست
+    });
   } catch (err) {
-    console.error("SMS ERROR:", err.response?.data || err.message);
-    res.status(500).json({ error: "SMS failed" });
+    console.error("NETWORK ERROR:", err.message);
+    res.status(500).json({ error: "Network failed" });
   }
 });
 
