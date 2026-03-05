@@ -17,15 +17,19 @@ app.post("/send-otp", async (req, res) => {
     : `972${digits.startsWith("0") ? digits.slice(1) : digits}`;
 
   codes[formattedPhone] = otp;
-  console.log("Saved Code:", formattedPhone, otp);
+  console.log("Saving Code for:", formattedPhone, "Code:", otp);
 
+  // الـ XML لازم يكون مرتب سطر بسطر عشان الـ SOAP يفهمه صح
   const xml = `<?xml version="1.0" encoding="utf-8"?>
 <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
   <soap12:Body>
     <sendSmsToRecipients xmlns="apiGlobalSms">
       <ApiKey>${process.env.GLOBAL_SMS_KEY}</ApiKey>
-      <txtOriginator>0542636724</txtOriginator> <destinations>${formattedPhone}</destinations>
+      <txtOriginator>0542636724</txtOriginator>
+      <destinations>${formattedPhone}</destinations>
       <txtSMSmessage>Your code is: ${otp}</txtSMSmessage>
+      <dteToDeliver></dteToDeliver>
+      <txtAddInf></txtAddInf>
     </sendSmsToRecipients>
   </soap12:Body>
 </soap12:Envelope>`;
@@ -35,13 +39,20 @@ app.post("/send-otp", async (req, res) => {
       "https://sapi.itnewsletter.co.il/webservices/WsSMS.asmx",
       xml,
       {
-        headers: { "Content-Type": "application/soap+xml; charset=utf-8" },
+        headers: {
+          "Content-Type": "application/soap+xml; charset=utf-8",
+          SOAPAction: "apiGlobalSms/sendSmsToRecipients", // ضفنا هاد عشان الدقة
+        },
       },
     );
-    console.log("Response:", response.data);
+
+    console.log("Global SMS Response:", response.data);
     res.json({ success: true });
   } catch (err) {
-    console.error("Error:", err.message);
+    console.error(
+      "Axios Error:",
+      err.response ? err.response.data : err.message,
+    );
     res.status(500).json({ error: "SMS failed" });
   }
 });
@@ -54,12 +65,13 @@ app.post("/verify-otp", (req, res) => {
     : `972${digits.startsWith("0") ? digits.slice(1) : digits}`;
 
   const savedOtp = codes[formattedPhone];
+  console.log(`Checking: ${code} against saved: ${savedOtp}`);
 
   if (savedOtp && savedOtp === code) {
     delete codes[formattedPhone];
     res.json({ success: true, token: "login-success-token" });
   } else {
-    res.status(400).json({ error: "الكود غلط" });
+    res.status(400).json({ error: "Invalid Code" });
   }
 });
 
