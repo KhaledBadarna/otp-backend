@@ -17,26 +17,26 @@ app.post("/send-otp", async (req, res) => {
   }
 
   const digits = phone.replace(/\D/g, "");
-  const local = digits.startsWith("0") ? digits.slice(1) : digits;
-  const formattedPhone = `972${local}`;
+  // تصحيح: إذا الرقم واصل 054، بصير 97254. إذا واصل 97254، بضل 97254.
+  let formattedPhone;
+  if (digits.startsWith("972")) {
+    formattedPhone = digits;
+  } else {
+    formattedPhone = `972${digits.startsWith("0") ? digits.slice(1) : digits}`;
+  }
 
   const xml = `<?xml version="1.0" encoding="utf-8"?>
-<soap12:Envelope 
-xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
   <soap12:Body>
     <sendSmsToRecipients xmlns="apiGlobalSms">
       <ApiKey>${MY_API_KEY}</ApiKey>
- <txtOriginator>SHAFRA</txtOriginator>
-      <destinations>${formattedPhone}</destinations>
+      <txtOriginator>0542636724</txtOriginator> <destinations>${formattedPhone}</destinations>
       <txtSMSmessage>Your code is: ${otp}</txtSMSmessage>
       <dteToDeliver></dteToDeliver>
       <txtAddInf>otp-test</txtAddInf>
     </sendSmsToRecipients>
   </soap12:Body>
-</soap12:Envelope>
-`;
+</soap12:Envelope>`;
 
   try {
     const response = await axios.post(
