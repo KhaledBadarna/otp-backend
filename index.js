@@ -25,7 +25,7 @@ app.post("/send-otp", async (req, res) => {
   <soap12:Body>
     <sendSmsToRecipients xmlns="apiGlobalSms">
       <ApiKey>${process.env.GLOBAL_SMS_KEY}</ApiKey>
-      <txtOriginator>0542636724</txtOriginator>
+      <txtOriginator>SHAFRA</txtOriginator>
       <destinations>${formattedPhone}</destinations>
       <txtSMSmessage>Your code is: ${otp}</txtSMSmessage>
       <dteToDeliver></dteToDeliver>
